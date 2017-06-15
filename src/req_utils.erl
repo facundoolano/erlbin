@@ -4,7 +4,7 @@
 
 reply(Req, Body) -> reply(Req, Body, 200).
 reply(Req, Body, Status) ->
-cowboy_req:reply(Status,
-                 [{<<"content-type">>, <<"application/json">>}],
-                 jiffy:encode(Body),
-                 Req).
+    cowboy_req:reply(Status,
+                     [{<<"content-type">>, <<"application/json">>}],
+                     jiffy:encode(Body),
+                     Req).

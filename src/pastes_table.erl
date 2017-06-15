@@ -50,9 +50,5 @@ get(Id) ->
         [] -> throw(not_found)
     end.
 
-
-
-
-
 get_all() ->
     [Data#{<<"id">> => Id} || {Id, Data} <- ets:tab2list(?TABLE)]. %% I know, I know

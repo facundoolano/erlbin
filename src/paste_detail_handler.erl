@@ -27,7 +27,6 @@ terminate(_Reason, _Req, _State) ->
 %% Internal functions
 %%====================================================================
 
-%% FIXME handle not found
 handle_paste(<<"GET">>, Id, Req) ->
     try pastes_table:get(Id) of
         Data -> req_utils:reply(Req, Data)
