@@ -4,8 +4,10 @@
 
 -define(TABLE, ?MODULE).
 
--export([set/1]).
+-export([set/1, set/2]).
+-export([exists/1]).
 -export([get/1]).
+-export([delete/1]).
 -export([get_all/0]).
 
 -export([init/1]).
@@ -42,13 +44,26 @@ set(Data) ->
     Id = erlang:unique_integer([positive]),
     Term = {Id, Data},
     true = ets:insert(?TABLE, Term),
-    Data#{<<"id">> => Id}.
+    Data#{id => Id}.
+
+set(Id, Data) ->
+    Term = {Id, Data},
+    true = ets:insert(?TABLE, Term),
+    Data#{id => Id}.
 
 get(Id) ->
     case ets:lookup(?TABLE, Id) of
-        [{Id, Data}] -> Data#{<<"id">> => Id};
+        [{Id, Data}] -> Data#{id => Id};
         [] -> throw(not_found)
     end.
 
+exists(Id) ->
+    case ets:lookup(?TABLE, Id) of
+        [] -> false;
+        _ -> true
+    end.
+
+delete(Id) -> ets:delete(?TABLE, Id).
+
 get_all() ->
-    [Data#{<<"id">> => Id} || {Id, Data} <- ets:tab2list(?TABLE)]. %% I know, I know
+    [Data#{id => Id} || {Id, Data} <- ets:tab2list(?TABLE)]. %% I know, I know

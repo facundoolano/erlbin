@@ -1,40 +1,42 @@
 -module(erlbin_list_handler).
 
--behaviour(cowboy_http_handler).
-
 -export([init/3]).
--export([handle/2]).
--export([terminate/3]).
+-export([allowed_methods/2]).
+-export([content_types_provided/2]).
+-export([content_types_accepted/2]).
+-export([to_json/2]).
+-export([from_json/2]).
 
-%%====================================================================
-%% API
-%%====================================================================
+init(_Transport, _Req, []) ->
+    {upgrade, protocol, cowboy_rest}.
 
-init(_, Req, _Opts) ->
-    {ok, Req, no_state}.
+allowed_methods(Req, State) ->
+    {[<<"GET">>, <<"HEAD">>, <<"OPTIONS">>, <<"POST">>], Req, State}.
 
-handle(Req, State) ->
-    {Method, Req2} = cowboy_req:method(Req),
-    {ok, Req3} = handle_paste(Method, Req2),
-    {ok, Req3, State}.
+%% TODO add html and text
+content_types_provided(Req, State) ->
+    {[
+      %% {<<"text/html">>, hello_to_html},
+      {<<"application/json">>, to_json}
+      %% {<<"text/plain">>, hello_to_text}
+     ], Req, State}.
 
-terminate(_Reason, _Req, _State) ->
-    ok.
+to_json(Req, State) ->
+    Body = jiffy:encode(erlbin_table:get_all()),
+    {Body, Req, State}.
 
-%%====================================================================
-%% Internal functions
-%%====================================================================
+%% TODO add html and text
+content_types_accepted(Req, State) ->
+    {[
+      %% {<<"text/html">>, hello_to_html},
+      {<<"application/json">>, from_json}
+      %% {<<"text/plain">>, hello_to_text}
+     ], Req, State}.
 
-handle_paste(<<"POST">>, Req) ->
+from_json(Req, State) ->
     {ok, Body, Req2} = cowboy_req:body(Req),
     % TODO validate input fields
     DecodedBody = jiffy:decode(Body, [return_maps]),
-    Result = erlbin_table:set(DecodedBody),
-    erlbin_utils:reply(Req2, Result, 201);
-
-handle_paste(<<"GET">>, Req) ->
-    erlbin_utils:reply(Req, erlbin_table:get_all());
-
-handle_paste(_, Req) ->
-    Body = #{<<"message">> => <<"Method not allowed">>},
-    erlbin_utils:reply(Req, Body, 405).
+    #{id := Id} = erlbin_table:set(DecodedBody),
+    BinId = erlang:integer_to_binary(Id),
+    {{true,  <<"/api/pastes/", BinId/binary>>},  Req2, State}.

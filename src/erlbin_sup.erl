@@ -26,7 +26,6 @@ start_link() ->
 %% Supervisor callbacks
 %%====================================================================
 
-%% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
     {ok, { #{ strategy => one_for_all, intensity => 0, period => 1 },
            [#{
