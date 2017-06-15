@@ -51,7 +51,8 @@ from_json(Req, State=#{id := Id})->
     %% TODO validate input fields
     DecodedBody = jiffy:decode(Body, [return_maps]),
     erlbin_table:set(Id, DecodedBody),
-    {true,  Req2, State}.
+    Req3 = cowboy_req:set_resp_body(Body, Req2),
+    {true, Req3, State}.
 
 delete_resource(Req, State=#{id := Id}) ->
     erlbin_table:delete(Id),
