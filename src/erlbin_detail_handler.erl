@@ -33,7 +33,6 @@ content_types_provided(Req, State) ->
       %% {<<"text/plain">>, hello_to_text}
      ], Req, State}.
 
-%% FIXME what if not found here?
 to_json(Req, State=#{id := Id}) ->
     Body = jiffy:encode(erlbin_table:get(Id)),
     {Body, Req, State}.
@@ -51,6 +50,7 @@ from_json(Req, State=#{id := Id})->
     %% TODO validate input fields
     DecodedBody = jiffy:decode(Body, [return_maps]),
     erlbin_table:set(Id, DecodedBody),
+    %% set body so we get a payload response instead of 204 no content
     Req3 = cowboy_req:set_resp_body(Body, Req2),
     {true, Req3, State}.
 
