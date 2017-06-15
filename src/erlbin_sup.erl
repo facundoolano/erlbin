@@ -28,14 +28,16 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, { {one_for_all, 0, 1},
-           [{pastes_table,
-             {pastes_table, start_link, []},
-             permanent,
-             5000,
-             worker,
-             [pastes_table]}
-           ] }}.
+    {ok, { #{ strategy => one_for_all, intensity => 0, period => 1 },
+           [#{
+               id => pastes_table,
+               start => {pastes_table, start_link, []},
+               restart => permanent,
+               shutdown => 5000,
+               type => worker,
+               modules => [pastes_table]
+             }]
+         }}.
 
 %%====================================================================
 %% Internal functions
