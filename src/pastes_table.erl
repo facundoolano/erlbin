@@ -38,17 +38,15 @@ code_change(_OldVsn, State, _Extra) -> {ok, State}.
 terminate(normal, _State) -> ok.
 
 %% table API
-
 set(Data) ->
     Id = erlang:unique_integer([positive]),
     Term = {Id, Data},
-    true = ets:insert(?TABLE, {Id, Data}),
-    Term.
+    true = ets:insert(?TABLE, Term),
+    Data#{<<"id">> => Id}.
 
 get(Id) ->
-    %% TODO catch doesnt exists?
     [{Id, Data}] = ets:lookup(?TABLE, Id),
-    Data.
+    Data#{<<"id">> => Id}.
 
-%% I know, I know
-get_all() -> ets:tab2list(?TABLE).
+get_all() ->
+    [Data#{<<"id">> => Id} || {Id, Data} <- ets:tab2list(?TABLE)]. %% I know, I know

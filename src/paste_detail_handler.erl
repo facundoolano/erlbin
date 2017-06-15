@@ -1,4 +1,4 @@
--module(paste_list_handler).
+-module(paste_detail_handler).
 
 -behaviour(cowboy_http_handler).
 
@@ -11,11 +11,13 @@
 %%====================================================================
 
 init(_, Req, _Opts) ->
-    {ok, Req, no_state}.
+    {Id, Req2} = cowboy_req:binding(id, Req),
+    State = #{id => Id},
+    {ok, Req2, State}.
 
-handle(Req, State) ->
+handle(Req, State=#{id := Id}) ->
     {Method, Req2} = cowboy_req:method(Req),
-    {ok, Req3} = handle_paste(Method, Req2),
+    {ok, Req3} = handle_paste(Method, Id, Req2),
     {ok, Req3, State}.
 
 terminate(_Reason, _Req, _State) ->
@@ -25,16 +27,10 @@ terminate(_Reason, _Req, _State) ->
 %% Internal functions
 %%====================================================================
 
-handle_paste(<<"POST">>, Req) ->
-    {ok, Body, Req2} = cowboy_req:body(Req),
-    % TODO validate input fields
-    DecodedBody = jiffy:decode(Body, [return_maps]),
-    Result = pastes_table:set(DecodedBody),
-    req_utils:reply(Req2, Result, 201);
+%% FIXME handle not found
+handle_paste(<<"GET">>, Id, Req) ->
+    req_utils:reply(Req, pastes_table:get(Id));
 
-handle_paste(<<"GET">>, Req) ->
-    req_utils:reply(Req, pastes_table:get_all());
-
-handle_paste(_, Req) ->
+handle_paste(_Method, _Id, Req) ->
     Body = #{<<"message">> => <<"Method not allowed">>},
     req_utils:reply(Req, Body, 405).

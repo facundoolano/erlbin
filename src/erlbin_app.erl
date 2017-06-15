@@ -18,7 +18,7 @@ start(_StartType, _StartArgs) ->
     Dispatch = cowboy_router:compile([
                                       %% TODO add home html
                                       {'_', [{"/api/pastes", paste_list_handler, []},
-                                             {"/api/pastes/:id/", paste_detail_handler, []}]}
+                                             {"/api/pastes/:id/", [{id, int}], paste_detail_handler, []}]}
                                      ]),
     cowboy:start_http(my_http_listener, 100, [{port, 8080}],
                       [{env, [{dispatch, Dispatch}]}]
