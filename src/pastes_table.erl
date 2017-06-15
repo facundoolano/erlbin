@@ -45,8 +45,14 @@ set(Data) ->
     Data#{<<"id">> => Id}.
 
 get(Id) ->
-    [{Id, Data}] = ets:lookup(?TABLE, Id),
-    Data#{<<"id">> => Id}.
+    case ets:lookup(?TABLE, Id) of
+        [{Id, Data}] -> Data#{<<"id">> => Id};
+        [] -> throw(not_found)
+    end.
+
+
+
+
 
 get_all() ->
     [Data#{<<"id">> => Id} || {Id, Data} <- ets:tab2list(?TABLE)]. %% I know, I know

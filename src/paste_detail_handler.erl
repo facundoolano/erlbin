@@ -29,7 +29,11 @@ terminate(_Reason, _Req, _State) ->
 
 %% FIXME handle not found
 handle_paste(<<"GET">>, Id, Req) ->
-    req_utils:reply(Req, pastes_table:get(Id));
+    try pastes_table:get(Id) of
+        Data -> req_utils:reply(Req, Data)
+    catch
+        not_found -> req_utils:reply(Req, #{message => <<"Paste not found">>}, 404)
+    end;
 
 handle_paste(_Method, _Id, Req) ->
     Body = #{<<"message">> => <<"Method not allowed">>},
