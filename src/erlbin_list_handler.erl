@@ -1,4 +1,4 @@
--module(paste_list_handler).
+-module(erlbin_list_handler).
 
 -behaviour(cowboy_http_handler).
 
@@ -29,12 +29,12 @@ handle_paste(<<"POST">>, Req) ->
     {ok, Body, Req2} = cowboy_req:body(Req),
     % TODO validate input fields
     DecodedBody = jiffy:decode(Body, [return_maps]),
-    Result = pastes_table:set(DecodedBody),
-    req_utils:reply(Req2, Result, 201);
+    Result = erlbin_table:set(DecodedBody),
+    erlbin_utils:reply(Req2, Result, 201);
 
 handle_paste(<<"GET">>, Req) ->
-    req_utils:reply(Req, pastes_table:get_all());
+    erlbin_utils:reply(Req, erlbin_table:get_all());
 
 handle_paste(_, Req) ->
     Body = #{<<"message">> => <<"Method not allowed">>},
-    req_utils:reply(Req, Body, 405).
+    erlbin_utils:reply(Req, Body, 405).

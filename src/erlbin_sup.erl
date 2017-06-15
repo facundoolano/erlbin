@@ -30,12 +30,12 @@ start_link() ->
 init([]) ->
     {ok, { #{ strategy => one_for_all, intensity => 0, period => 1 },
            [#{
-               id => pastes_table,
-               start => {pastes_table, start_link, []},
+               id => erlbin_table,
+               start => {erlbin_table, start_link, []},
                restart => permanent,
                shutdown => 5000,
                type => worker,
-               modules => [pastes_table]
+               modules => [erlbin_table]
              }]
          }}.
 

@@ -1,4 +1,4 @@
--module(paste_detail_handler).
+-module(erlbin_detail_handler).
 
 -behaviour(cowboy_http_handler).
 
@@ -28,12 +28,12 @@ terminate(_Reason, _Req, _State) ->
 %%====================================================================
 
 handle_paste(<<"GET">>, Id, Req) ->
-    try pastes_table:get(Id) of
-        Data -> req_utils:reply(Req, Data)
+    try erlbin_table:get(Id) of
+        Data -> erlbin_utils:reply(Req, Data)
     catch
-        not_found -> req_utils:reply(Req, #{message => <<"Paste not found">>}, 404)
+        not_found -> erlbin_utils:reply(Req, #{message => <<"Paste not found">>}, 404)
     end;
 
 handle_paste(_Method, _Id, Req) ->
     Body = #{<<"message">> => <<"Method not allowed">>},
-    req_utils:reply(Req, Body, 405).
+    erlbin_utils:reply(Req, Body, 405).

@@ -1,4 +1,4 @@
--module(req_utils).
+-module(erlbin_utils).
 
 -export([reply/2, reply/3]).
 

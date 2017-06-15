@@ -1,4 +1,4 @@
--module(pastes_table).
+-module(erlbin_table).
 
 -behaviour(gen_server).
 
