@@ -1,39 +1,59 @@
 -module(erlbin_detail_handler).
 
--behaviour(cowboy_http_handler).
-
 -export([init/3]).
--export([handle/2]).
--export([terminate/3]).
+-export([rest_init/2]).
+-export([allowed_methods/2]).
+-export([resource_exists/2]).
+-export([content_types_provided/2]).
+-export([content_types_accepted/2]).
+-export([to_json/2]).
+-export([from_json/2]).
+-export([delete_resource/2]).
 
-%%====================================================================
-%% API
-%%====================================================================
+init(_Transport, _Req, []) ->
+    {upgrade, protocol, cowboy_rest}.
 
-init(_, Req, _Opts) ->
+rest_init(Req, _Opts) ->
     {Id, Req2} = cowboy_req:binding(id, Req),
     State = #{id => Id},
     {ok, Req2, State}.
 
-handle(Req, State=#{id := Id}) ->
-    {Method, Req2} = cowboy_req:method(Req),
-    {ok, Req3} = handle_paste(Method, Id, Req2),
-    {ok, Req3, State}.
+allowed_methods(Req, State) ->
+    {[<<"GET">>, <<"HEAD">>, <<"OPTIONS">>, <<"PUT">>, <<"DELETE">>],
+     Req, State}.
 
-terminate(_Reason, _Req, _State) ->
-    ok.
+resource_exists(Req, State=#{id := Id}) ->
+    {erlbin_table:exists(Id), Req, State}.
 
-%%====================================================================
-%% Internal functions
-%%====================================================================
+%% TODO add html and text
+content_types_provided(Req, State) ->
+    {[
+      %% {<<"text/html">>, hello_to_html},
+      {<<"application/json">>, to_json}
+      %% {<<"text/plain">>, hello_to_text}
+     ], Req, State}.
 
-handle_paste(<<"GET">>, Id, Req) ->
-    try erlbin_table:get(Id) of
-        Data -> erlbin_utils:reply(Req, Data)
-    catch
-        not_found -> erlbin_utils:reply(Req, #{message => <<"Paste not found">>}, 404)
-    end;
+to_json(Req, State=#{id := Id}) ->
+    Body = jiffy:encode(erlbin_table:get(Id)),
+    {Body, Req, State}.
 
-handle_paste(_Method, _Id, Req) ->
-    Body = #{<<"message">> => <<"Method not allowed">>},
-    erlbin_utils:reply(Req, Body, 405).
+content_types_accepted(Req, State) ->
+    {[
+      %% {<<"text/html">>, hello_to_html},
+      {<<"application/json">>, from_json}
+      %% {<<"text/plain">>, hello_to_text}
+     ], Req, State}.
+
+%% for put handling
+from_json(Req, State=#{id := Id})->
+    {ok, Body, Req2} = cowboy_req:body(Req),
+    %% TODO validate input fields
+    DecodedBody = jiffy:decode(Body, [return_maps]),
+    erlbin_table:set(Id, DecodedBody),
+    %% set body so we get a payload response instead of 204 no content
+    Req3 = cowboy_req:set_resp_body(Body, Req2),
+    {true, Req3, State}.
+
+delete_resource(Req, State=#{id := Id}) ->
+    erlbin_table:delete(Id),
+    {true, Req, State}.
