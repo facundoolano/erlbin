@@ -16,9 +16,11 @@
 
 start(_StartType, _StartArgs) ->
     Dispatch = cowboy_router:compile([
-                                      %% TODO add home html
-                                      {'_', [{"/api/pastes", erlbin_list_handler, []},
-                                             {"/api/pastes/:id/", [{id, int}], erlbin_detail_handler, []}]}
+                                      {'_', [{"/", cowboy_static, {file, "static/index.html"}},
+                                             {"/assets/[...]", cowboy_static, {dir, "static/"}},
+                                             {"/api/pastes", erlbin_list_handler, []},
+                                             {"/api/pastes/:id", [{id, int}], erlbin_detail_handler, []},
+                                             {"/websockets", erlbin_sockets_handler, []}]}
                                      ]),
     cowboy:start_http(my_http_listener, 100, [{port, 8080}],
                       [{env, [{dispatch, Dispatch}]}]

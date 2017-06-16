@@ -1,7 +1,7 @@
 erlbin
 =====
 
-An OTP application
+An example cowboy application, using the REST and WebSocket behaviours.
 
 Build
 -----
