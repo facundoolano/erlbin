@@ -64,15 +64,15 @@ get_all() ->
 %%%% pubsub API
 
 subscribe() ->
-    pg2:join(?SUBSCRIBERS, self()).
+    gproc:reg({p, l, {?MODULE, table_action}}).
 
 unsubscribe() ->
-    pg2:leave(?SUBSCRIBERS, self()).
+    gproc:unreg({p, l, {?MODULE, table_action}}).
 
 %% used internally by the functions that change the table
 publish(Action, Data) ->
-    %% maybe better to do it in a different process to avoid timeouts on the caller
-    [Pid ! {table_action, Action, Data} || Pid <- pg2:get_members(?SUBSCRIBERS)].
+    Key = {?MODULE, table_action},
+    gproc:send({p, l, Key}, {table_action, Action, Data}).
 
 %%%%% gen_server callbacks
 
