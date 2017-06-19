@@ -20,7 +20,7 @@ start(_StartType, _StartArgs) ->
                                              {"/assets/[...]", cowboy_static, {dir, "static/"}},
                                              {"/api/pastes", erlbin_list_handler, []},
                                              {"/api/pastes/:id", [{id, int}], erlbin_detail_handler, []},
-                                             {"/websockets", erlbin_sockets_handler, []}]}
+                                             {"/websockets", erlbin_websockets_handler, []}]}
                                      ]),
     cowboy:start_http(my_http_listener, 100, [{port, 8080}],
                       [{env, [{dispatch, Dispatch}]}]
