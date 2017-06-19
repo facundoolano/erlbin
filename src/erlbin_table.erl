@@ -64,22 +64,21 @@ get_all() ->
 %%%% pubsub API
 
 subscribe() ->
-    ets:insert(?SUBSCRIBERS, {self()}).
+    pg2:join(?SUBSCRIBERS, self()).
 
 unsubscribe() ->
-    ets:delete(?SUBSCRIBERS, self()).
+    pg2:leave(?SUBSCRIBERS, self()).
 
 %% used internally by the functions that change the table
 publish(Action, Data) ->
     %% maybe better to do it in a different process to avoid timeouts on the caller
-    ets:foldl(fun ({Pid}, _Acc) -> Pid ! {table_action, Action, Data} end,
-              acc0, ?SUBSCRIBERS).
+    [Pid ! {table_action, Action, Data} || Pid <- pg2:get_members(?SUBSCRIBERS)].
 
 %%%%% gen_server callbacks
 
 init(_) ->
     ets:new(?TABLE, [set, named_table, public]),
-    ets:new(?SUBSCRIBERS, [set, named_table, public]),
+    pg2:create(?SUBSCRIBERS),
     {ok, #{subscribers => []}}.
 
 handle_call(_Req, _From, State) ->
