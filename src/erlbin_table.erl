@@ -64,21 +64,19 @@ get_all() ->
 %%%% pubsub API
 
 subscribe() ->
-    gproc:reg({p, l, {?MODULE, table_action}}).
+    syn:join(?SUBSCRIBERS, self()).
 
 unsubscribe() ->
-    gproc:unreg({p, l, {?MODULE, table_action}}).
+    syn:leave(?SUBSCRIBERS, self()).
 
 %% used internally by the functions that change the table
 publish(Action, Data) ->
-    Key = {?MODULE, table_action},
-    gproc:send({p, l, Key}, {table_action, Action, Data}).
+    syn:publish(?SUBSCRIBERS, {table_action, Action, Data}).
 
 %%%%% gen_server callbacks
 
 init(_) ->
     ets:new(?TABLE, [set, named_table, public]),
-    pg2:create(?SUBSCRIBERS),
     {ok, #{subscribers => []}}.
 
 handle_call(_Req, _From, State) ->

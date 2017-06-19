@@ -15,6 +15,7 @@
 %%====================================================================
 
 start(_StartType, _StartArgs) ->
+    syn:init(),
     Dispatch = cowboy_router:compile([
                                       {'_', [{"/", cowboy_static, {file, "static/index.html"}},
                                              {"/assets/[...]", cowboy_static, {dir, "static/"}},
