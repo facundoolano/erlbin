@@ -13,12 +13,12 @@ init(_Transport, _Req, []) ->
 
 websocket_init(_Type, Req, _Opts) ->
     io:format("websocket connected!~n"),
-    erlbin_table:subscribe(),
-    {ok, Req, no_state, 5000}.
+    erlbin_notificator:subscribe(),
+    {ok, Req, no_state, 60000}.
 
 websocket_terminate(_Reason, _Req, _State) ->
     io:format("websocket disconnected.~n"),
-    erlbin_table:unsubscribe(),
+    erlbin_notificator:unsubscribe(),
     ok.
 
 websocket_info({table_action, Action, Data}, Req, State) ->

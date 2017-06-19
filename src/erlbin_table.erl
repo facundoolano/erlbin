@@ -3,7 +3,6 @@
 -behaviour(gen_server).
 
 -define(TABLE, ?MODULE).
--define(SUBSCRIBERS, paste_subscribers).
 
 -export([set/1,
          set/2,
@@ -11,9 +10,6 @@
          get/1,
          delete/1,
          get_all/0,
-
-         subscribe/0,
-         unsubscribe/0,
 
          init/1,
          start_link/0,
@@ -32,14 +28,14 @@ set(Data) ->
     Term = {Id, Data},
     true = ets:insert(?TABLE, Term),
     Result = Data#{id => Id},
-    publish(create, Result),
+    erlbin_notificator:publish(create, Result),
     Result.
 
 set(Id, Data) ->
     Term = {Id, Data},
     true = ets:insert(?TABLE, Term),
     Result = Data#{id => Id},
-    publish(update, Result),
+    erlbin_notificator:publish(update, Result),
     Result.
 
 get(Id) ->
@@ -56,30 +52,15 @@ exists(Id) ->
 
 delete(Id) ->
     ets:delete(?TABLE, Id),
-    publish(delete, Id).
+    erlbin_notificator:publish(delete, Id).
 
 get_all() ->
     [Data#{id => Id} || {Id, Data} <- ets:tab2list(?TABLE)]. %% I know, I know
-
-%%%% pubsub API
-
-subscribe() ->
-    ets:insert(?SUBSCRIBERS, {self()}).
-
-unsubscribe() ->
-    ets:delete(?SUBSCRIBERS, self()).
-
-%% used internally by the functions that change the table
-publish(Action, Data) ->
-    %% maybe better to do it in a different process to avoid timeouts on the caller
-    ets:foldl(fun ({Pid}, _Acc) -> Pid ! {table_action, Action, Data} end,
-              acc0, ?SUBSCRIBERS).
 
 %%%%% gen_server callbacks
 
 init(_) ->
     ets:new(?TABLE, [set, named_table, public]),
-    ets:new(?SUBSCRIBERS, [set, named_table, public]),
     {ok, #{subscribers => []}}.
 
 handle_call(_Req, _From, State) ->

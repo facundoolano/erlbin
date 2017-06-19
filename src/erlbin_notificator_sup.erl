@@ -1,9 +1,4 @@
-%%%-------------------------------------------------------------------
-%% @doc erlbin top level supervisor.
-%% @end
-%%%-------------------------------------------------------------------
-
--module(erlbin_sup).
+-module(erlbin_notificator_sup).
 
 -behaviour(supervisor).
 
@@ -27,22 +22,15 @@ start_link() ->
 %%====================================================================
 
 init([]) ->
-    {ok, { #{ strategy => one_for_all, intensity => 0, period => 1 },
+    erlbin_notificator:init_subscribers(),
+    {ok, { #{ strategy => simple_one_for_one, intensity => 0, period => 1 },
            [#{
-               id => erlbin_table,
-               start => {erlbin_table, start_link, []},
-               restart => permanent,
+               id => erlbin_notificator,
+               start => {erlbin_notificator, start_link, []},
+               restart => temporary,
                shutdown => 5000,
                type => worker,
-               modules => [erlbin_table]
-             },
-            #{
-               id => erlbin_notificator_sup,
-               start => {erlbin_notificator_sup, start_link, []},
-               restart => permanent,
-               shutdown => 5000,
-               type => supervisor,
-               modules => [erlbin_notificator_sup]
+               modules => [erlbin_notificator]
              }]
          }}.
 
