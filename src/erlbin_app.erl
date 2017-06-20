@@ -17,8 +17,8 @@
 start(_StartType, _StartArgs) ->
     syn:init(),
     Dispatch = cowboy_router:compile([
-                                      {'_', [{"/", cowboy_static, {file, "static/index.html"}},
-                                             {"/assets/[...]", cowboy_static, {dir, "static/"}},
+                                      {'_', [{"/", cowboy_static, {priv_file, erlbin, "index.html"}},
+                                             {"/assets/[...]", cowboy_static, {priv_dir, erlbin, ""}},
                                              {"/api/pastes", erlbin_list_handler, []},
                                              {"/api/pastes/:id", [{id, int}], erlbin_detail_handler, []},
                                              {"/websockets", erlbin_websockets_handler, []}]}
