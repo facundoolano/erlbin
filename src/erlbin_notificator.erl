@@ -4,14 +4,12 @@
 
 -define(SUBSCRIBERS, ?MODULE).
 
-%% API
--export([start_link/2]).
-
-%% gen_server callbacks
 -export([init_subscribers/0,
          subscribe/0,
          unsubscribe/0,
          publish/2,
+
+         start_link/0,
 
          init/1,
          handle_call/3,
@@ -22,14 +20,12 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {}).
-
 %%%===================================================================
 %%% API
 %%%===================================================================
 
-start_link(Action, Data) ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [Action, Data], []).
+start_link() ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 %%%% pubsub API
 
@@ -43,30 +39,33 @@ unsubscribe() ->
     ets:delete(?SUBSCRIBERS, self()).
 
 publish(Action, Data) ->
-    supervisor:start_child(erlbin_notificator_sup, [Action, Data]).
+    {ok, Pid} = supervisor:start_child(erlbin_notificator_sup, []),
+    gen_server:cast(Pid, {publish, Action, Data}).
 
 %%%===================================================================
 %%% gen_server callbacks
 %%%===================================================================
 
-init([Action, Data]) ->
+init([]) ->
     io:format("starting notification worker~n"),
-    self() ! {publish, Action, Data},
-    {ok, #state{}}.
+    {ok, no_state}.
 
 handle_call(_Request, _From, State) ->
     {noreply, State}.
 
-handle_cast(_Msg, State) ->
-    {noreply, State}.
-
-handle_info({publish, Action, Data}, State) ->
+handle_cast({publish, Action, Data}, State) ->
     io:format("sending notifications~n"),
     SendMsg = fun ({Pid}, _Acc) ->
                       Pid ! {table_action, Action, Data}
               end,
     ets:foldl(SendMsg, acc0, ?SUBSCRIBERS),
-    {stop, normal, State}.
+    {stop, normal, State};
+
+handle_cast(_Request, State) ->
+    {noreply, State}.
+
+handle_info(_Msg, State) ->
+    {noreply, State}.
 
 terminate(_Reason, _State) ->
     io:format("killing notification worker~n"),
