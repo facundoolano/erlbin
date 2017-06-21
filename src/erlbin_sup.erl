@@ -27,8 +27,16 @@ start_link() ->
 %%====================================================================
 
 init([]) ->
-    {ok, { #{ strategy => one_for_all, intensity => 0, period => 1 },
+    {ok, { #{ strategy => rest_for_one, intensity => 5, period => 1 },
            [#{
+               id => erlbin_table_manager,
+               start => {erlbin_table_manager, start_link, []},
+               restart => permanent,
+               shutdown => 5000,
+               type => worker,
+               modules => [erlbin_table_manager]
+             },
+            #{
                id => erlbin_table,
                start => {erlbin_table, start_link, []},
                restart => permanent,

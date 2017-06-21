@@ -2,7 +2,7 @@
 
 -behaviour(gen_server).
 
--define(TABLE, ?MODULE).
+-define(SERVER, ?MODULE).
 -define(SUBSCRIBERS, paste_subscribers).
 
 -export([set/1,
@@ -23,43 +23,37 @@
          code_change/3,
          terminate/2]).
 
-start_link() -> gen_server:start_link({local, ?TABLE}, ?MODULE, [], []).
+start_link() -> gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 %%%%% table API
 
 set(Data) ->
-    Id = erlang:unique_integer([positive]),
-    Term = {Id, Data},
-    true = ets:insert(?TABLE, Term),
-    Result = Data#{id => Id},
+    {ok, Result} = gen_server:call(?SERVER, {set, Data}),
     publish(create, Result),
     Result.
 
 set(Id, Data) ->
-    Term = {Id, Data},
-    true = ets:insert(?TABLE, Term),
-    Result = Data#{id => Id},
+    {ok, Result} = gen_server:call(?SERVER, {set, Id, Data}),
     publish(update, Result),
     Result.
 
 get(Id) ->
-    case ets:lookup(?TABLE, Id) of
-        [{Id, Data}] -> Data#{id => Id};
-        [] -> throw(not_found)
+    case gen_server:call(?SERVER, {get, Id}) of
+        {ok, Result} -> Result;
+        {error, Reason} -> throw(Reason)
     end.
 
 exists(Id) ->
-    case ets:lookup(?TABLE, Id) of
-        [] -> false;
-        _ -> true
-    end.
+    {ok, Result} = gen_server:call(?SERVER, {exists, Id}),
+    Result.
 
 delete(Id) ->
-    ets:delete(?TABLE, Id),
+    ok = gen_server:call(?SERVER, {delete, Id}),
     publish(delete, Id).
 
 get_all() ->
-    [Data#{id => Id} || {Id, Data} <- ets:tab2list(?TABLE)]. %% I know, I know
+    {ok, Result} = gen_server:call(?SERVER, {get_all}),
+    Result.
 
 %%%% pubsub API
 
@@ -76,14 +70,55 @@ publish(Action, Data) ->
 %%%%% gen_server callbacks
 
 init(_) ->
-    ets:new(?TABLE, [set, named_table, public]),
-    {ok, #{subscribers => []}}.
+    {ok, no_state}.
 
-handle_call(_Req, _From, State) ->
+handle_call({set, Data}, _From, TabId) ->
+    Id = erlang:unique_integer([positive]),
+    Term = {Id, Data},
+    true = ets:insert(TabId, Term),
+    Result = {ok, Data#{id => Id}},
+    {reply, Result, TabId};
+
+handle_call({set, Id, Data}, _From, TabId) ->
+    Term = {Id, Data},
+    true = ets:insert(TabId, Term),
+    Result = {ok, Data#{id => Id}},
+    {reply, Result, TabId};
+
+handle_call({get, Id}, _From, TabId) ->
+    Result = case ets:lookup(TabId, Id) of
+                 [{Id, Data}] -> {ok, Data#{id => Id}};
+                 [] -> {error, not_found}
+             end,
+    {reply, Result, TabId};
+
+handle_call({exists, Id}, _From, TabId) ->
+    Result = case ets:lookup(TabId, Id) of
+                 [] -> {ok,  false};
+                 _ -> {ok, true}
+             end,
+    {reply, Result, TabId};
+
+handle_call({delete, Id}, _From, TabId) ->
+    ets:delete(TabId, Id),
+    {reply, ok, TabId};
+
+handle_call({get_all}, _From, TabId) ->
+    Result = [Data#{id => Id} || {Id, Data} <- ets:tab2list(TabId)], %% I know, I know
+    {reply, {ok, Result}, TabId};
+
+handle_call(Req, _From, State) ->
+    io:format("unknown message ~p~n", Req),
     {noreply, State}.
 
 handle_cast(_Req, State) ->
     {noreply, State}.
+
+%% receive TabId when the table manager gives it away
+handle_info({'ETS-TRANSFER', TabId, _OldOwner, _Data}, _State) ->
+    io:format("received table from table manager, table: ~p elements: ~p.~n",
+              [TabId, ets:tab2list(TabId)]),
+    {noreply, TabId};
 
 handle_info(_Info, State) ->
     {noreply, State}.
